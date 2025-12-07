@@ -67,20 +67,20 @@ make restore           # Restore from backup
 make security-check    # Verify security
 ```
 
-## Security
+## Additional Security (Optional)
 
-### Firewall (Required)
+### Firewall (UFW)
 
 ```bash
+sudo ufw allow 22/tcp
+sudo ufw allow 80/tcp
+sudo ufw allow 443/tcp
 sudo ufw default deny incoming
 sudo ufw default allow outgoing
-sudo ufw allow 22/tcp   # SSH
-sudo ufw allow 80/tcp   # HTTP (Let's Encrypt)
-sudo ufw allow 443/tcp  # HTTPS
 sudo ufw enable
 ```
 
-### Fail2Ban (Optional)
+### Fail2Ban - Protect against brute force
 
 ```bash
 sudo apt-get install -y fail2ban
