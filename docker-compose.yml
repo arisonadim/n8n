@@ -19,6 +19,7 @@ services:
       - WEBHOOK_TUNNEL_REDIRECT_URLS=https://${VIRTUAL_HOST:-localhost}
       - VIRTUAL_HOST=${VIRTUAL_HOST:?VIRTUAL_HOST is required}
       - VIRTUAL_PORT=5678
+      - HTTPS_METHOD=redirect
       - LETSENCRYPT_HOST=${VIRTUAL_HOST}
       - LETSENCRYPT_EMAIL=${LETSENCRYPT_EMAIL:?LETSENCRYPT_EMAIL is required}
     ports:
