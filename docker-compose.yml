@@ -23,10 +23,10 @@ services:
       # Webhook base URL (nginx will forward requests)
       - WEBHOOK_TUNNEL_URL=https://${VIRTUAL_HOST:-localhost}
       - WEBHOOK_TUNNEL_REDIRECT_URLS=https://${VIRTUAL_HOST:-localhost}
-      # nginx-proxy auto-discovery labels
+      # nginx-proxy auto-discovery
       - VIRTUAL_HOST=${VIRTUAL_HOST:?VIRTUAL_HOST is required}
       - VIRTUAL_PORT=5678
-      - LETSENCRYPT_HOST=${LETSENCRYPT_HOST:-${VIRTUAL_HOST}}
+      - LETSENCRYPT_HOST=${VIRTUAL_HOST}
       - LETSENCRYPT_EMAIL=${LETSENCRYPT_EMAIL:?LETSENCRYPT_EMAIL is required}
 
     ports:
