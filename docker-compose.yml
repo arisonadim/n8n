@@ -1,0 +1,142 @@
+version: '3.8'
+
+services:
+  # ===========================
+  # n8n Workflow Automation
+  # ===========================
+  n8n:
+    image: n8nio/n8n:latest
+    container_name: n8n
+    restart: unless-stopped
+
+    environment:
+      - TZ=${TZ:-UTC}
+      - N8N_HOST=${N8N_HOST:-0.0.0.0}
+      - N8N_PORT=${N8N_PORT:-5678}
+      - N8N_PROTOCOL=${N8N_PROTOCOL:-http}
+      - N8N_ENCRYPTION_KEY=${N8N_ENCRYPTION_KEY:?N8N_ENCRYPTION_KEY is required}
+      - N8N_DB_TYPE=${N8N_DB_TYPE:-sqlite}
+      - N8N_DB_SQLITE_FILE=${N8N_DB_SQLITE_FILE:-/data/database.sqlite}
+      - N8N_BASIC_AUTH_ACTIVE=${N8N_BASIC_AUTH_ACTIVE:-true}
+      - N8N_BASIC_AUTH_USER=${N8N_BASIC_AUTH_USER:-admin}
+      - N8N_BASIC_AUTH_PASSWORD=${N8N_BASIC_AUTH_PASSWORD:?N8N_BASIC_AUTH_PASSWORD is required}
+      # Trust proxy headers from nginx
+      - N8N_TRUST_PROXY=true
+      # Webhook base URL (nginx will forward requests)
+      - WEBHOOK_TUNNEL_URL=https://${VIRTUAL_HOST:-localhost}
+      - WEBHOOK_TUNNEL_REDIRECT_URLS=https://${VIRTUAL_HOST:-localhost}
+
+    ports:
+      # Only expose to nginx via internal network
+      - "127.0.0.1:5678:5678"
+
+    volumes:
+      # Persistent data volume
+      - n8n_data:/data
+
+    networks:
+      - nginx-network
+
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5678/healthz"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+    security_opt:
+      - no-new-privileges:true
+
+    cap_drop:
+      - ALL
+    cap_add:
+      - NET_BIND_SERVICE
+
+  # ===========================
+  # Nginx Reverse Proxy
+  # ===========================
+  nginx-proxy:
+    image: jwilder/nginx-proxy:latest
+    container_name: nginx-proxy
+    restart: unless-stopped
+
+    ports:
+      - "80:80"
+      - "443:443"
+
+    volumes:
+      # Docker socket for auto-config generation
+      - /var/run/docker.sock:/tmp/docker.sock:ro
+      # Nginx config
+      - nginx_conf:/etc/nginx/conf.d
+      # HTML files
+      - nginx_html:/usr/share/nginx/html
+      # Let's Encrypt certificates (shared with acme-companion)
+      - nginx_certs:/etc/nginx/certs:ro
+      # Custom nginx configuration
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+
+    networks:
+      - nginx-network
+
+    environment:
+      - ENABLE_IPV6=true
+      - DEFAULT_HOST=${VIRTUAL_HOST:-n8n.example.com}
+      - TRUST_DOWNSTREAM_PROXY=true
+
+    security_opt:
+      - no-new-privileges:true
+
+  # ===========================
+  # ACME Companion (Let's Encrypt)
+  # ===========================
+  acme-companion:
+    image: nginxproxy/acme-companion:latest
+    container_name: nginx-acme
+    restart: unless-stopped
+
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - nginx_certs:/etc/nginx/certs
+      - nginx_vhost:/etc/nginx/vhost.d
+      - nginx_html:/usr/share/nginx/html
+      - ./acme_data:/etc/acme.sh
+
+    networks:
+      - nginx-network
+
+    environment:
+      - DEFAULT_EMAIL=${LETSENCRYPT_EMAIL:?LETSENCRYPT_EMAIL is required}
+      - NGINX_PROXY_CONTAINER=nginx-proxy
+      - DEBUG=0
+
+    security_opt:
+      - no-new-privileges:true
+
+    depends_on:
+      - nginx-proxy
+
+
+# ===========================
+# Networks
+# ===========================
+networks:
+  nginx-network:
+    driver: bridge
+    driver_opts:
+      com.docker.network.bridge.name: br-nginx
+
+# ===========================
+# Volumes
+# ===========================
+volumes:
+  n8n_data:
+    driver: local
+  nginx_conf:
+    driver: local
+  nginx_html:
+    driver: local
+  nginx_certs:
+    driver: local
+  nginx_vhost:
+    driver: local
