@@ -46,7 +46,7 @@ init: ## Initialize .env and generate encryption key
 	fi
 	@KEY=$$(openssl rand -hex 32); \
 	if grep -q "N8N_ENCRYPTION_KEY=changeme" .env 2>/dev/null; then \
-		sed -i '' "s/N8N_ENCRYPTION_KEY=changeme.*/N8N_ENCRYPTION_KEY=$$KEY/" .env; \
+		sed "s/N8N_ENCRYPTION_KEY=changeme.*/N8N_ENCRYPTION_KEY=$$KEY/" .env > .env.tmp && mv .env.tmp .env; \
 		echo "$(GREEN)Generated N8N_ENCRYPTION_KEY$(NC)"; \
 	fi
 	@echo "$(YELLOW)Edit .env with your domain and password:$(NC)"
