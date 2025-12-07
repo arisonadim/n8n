@@ -1,4 +1,4 @@
-.PHONY: help init up down restart logs logs-n8n logs-nginx logs-acme status backup restore security-check
+.PHONY: help init up down restart logs logs-n8n logs-nginx logs-acme status backup restore security-check firewall fail2ban
 
 # Colors
 RED := \033[0;31m
@@ -28,9 +28,13 @@ help: ## Show all commands
 	@echo "  make backup         Backup n8n data"
 	@echo "  make restore        Restore from backup"
 	@echo ""
+	@echo "$(GREEN)Security:$(NC)"
+	@echo "  make firewall       Configure UFW firewall (22/80/443 only)"
+	@echo "  make fail2ban       Install and configure fail2ban"
+	@echo "  make security-check Verify security configuration"
+	@echo ""
 	@echo "$(GREEN)Other:$(NC)"
 	@echo "  make status         Show container status"
-	@echo "  make security-check Verify security configuration"
 	@echo ""
 
 init: ## Initialize .env and generate encryption key
@@ -118,3 +122,39 @@ security-check: ## Verify security configuration
 	@echo ""
 	@echo "$(YELLOW)Firewall (UFW):$(NC)"
 	@sudo ufw status 2>/dev/null | grep -E "Status|22|80|443" || echo "Not available (run with sudo)"
+	@echo ""
+	@echo "$(YELLOW)Fail2ban:$(NC)"
+	@sudo fail2ban-client status 2>/dev/null | head -5 || echo "Not installed (run: make fail2ban)"
+
+firewall: ## Configure UFW firewall (allows only 22/80/443)
+	@echo "$(BLUE)Configuring UFW firewall...$(NC)"
+	@sudo ufw allow 22/tcp comment 'SSH'
+	@sudo ufw allow 80/tcp comment 'HTTP'
+	@sudo ufw allow 443/tcp comment 'HTTPS'
+	@if sudo ufw status | grep -q "22/tcp.*ALLOW"; then \
+		echo "$(GREEN)✓ SSH port 22 allowed - safe to enable firewall$(NC)"; \
+		sudo ufw default deny incoming; \
+		sudo ufw default allow outgoing; \
+		echo "$(YELLOW)Enabling UFW (type 'y' to confirm)...$(NC)"; \
+		sudo ufw enable; \
+		echo ""; \
+		echo "$(GREEN)✓ Firewall configured$(NC)"; \
+		sudo ufw status verbose; \
+	else \
+		echo "$(RED)✗ ERROR: SSH rule not confirmed - aborting to prevent lockout$(NC)"; \
+		exit 1; \
+	fi
+
+fail2ban: ## Install and configure fail2ban
+	@echo "$(BLUE)Installing fail2ban...$(NC)"
+	@sudo apt-get update && sudo apt-get install -y fail2ban
+	@echo "$(BLUE)Copying configuration files...$(NC)"
+	@sudo cp fail2ban/jail.local /etc/fail2ban/jail.local
+	@sudo mkdir -p /etc/fail2ban/filter.d
+	@sudo cp fail2ban/filter.d/n8n-auth.conf /etc/fail2ban/filter.d/n8n-auth.conf
+	@echo "$(BLUE)Restarting fail2ban...$(NC)"
+	@sudo systemctl restart fail2ban
+	@sudo systemctl enable fail2ban
+	@echo ""
+	@echo "$(GREEN)✓ Fail2ban configured$(NC)"
+	@sudo fail2ban-client status

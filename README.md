@@ -64,27 +64,34 @@ make logs-nginx        # View nginx logs
 make logs-acme         # View certificate logs
 make backup            # Backup n8n data
 make restore           # Restore from backup
+make firewall          # Configure UFW (22/80/443 only)
+make fail2ban          # Install & configure fail2ban
 make security-check    # Verify security
 ```
 
-## Additional Security (Optional)
+## Security Setup
 
 ### Firewall (UFW)
 
 ```bash
-sudo ufw allow 22/tcp
-sudo ufw allow 80/tcp
-sudo ufw allow 443/tcp
-sudo ufw default deny incoming
-sudo ufw default allow outgoing
-sudo ufw enable
+make firewall   # Configures UFW to allow only SSH (22), HTTP (80), HTTPS (443)
 ```
 
-### Fail2Ban - Protect against brute force
+### Fail2ban - Brute Force Protection
 
 ```bash
-sudo apt-get install -y fail2ban
-sudo systemctl restart fail2ban
+make fail2ban   # Installs and configures fail2ban with n8n rules
+```
+
+This sets up protection for:
+- SSH (3 failed attempts = 1 hour ban)
+- Nginx auth (5 failed attempts = 10 min ban)
+- n8n login (5 failed attempts = 30 min ban)
+
+Check status:
+```bash
+sudo fail2ban-client status
+sudo fail2ban-client status n8n-auth
 ```
 
 ## Troubleshooting

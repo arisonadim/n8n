@@ -1,0 +1,49 @@
+# fail2ban jail configuration for n8n
+# Copy to: /etc/fail2ban/jail.local
+
+[DEFAULT]
+# Ban duration (10 minutes)
+bantime = 10m
+
+# Time window for counting failures
+findtime = 10m
+
+# Max retries before ban
+maxretry = 5
+
+# Action to take (ban IP via iptables)
+banaction = iptables-multiport
+
+# Email notifications (optional, configure destemail and sender)
+# action = %(action_mwl)s
+
+[sshd]
+enabled = true
+port = ssh
+filter = sshd
+logpath = /var/log/auth.log
+maxretry = 3
+bantime = 1h
+
+[nginx-http-auth]
+enabled = true
+filter = nginx-http-auth
+port = http,https
+logpath = /var/log/nginx/error.log
+maxretry = 5
+
+[nginx-limit-req]
+enabled = true
+filter = nginx-limit-req
+port = http,https
+logpath = /var/log/nginx/error.log
+maxretry = 10
+
+[n8n-auth]
+enabled = true
+filter = n8n-auth
+port = http,https
+logpath = /var/lib/docker/containers/*/*.log
+maxretry = 5
+bantime = 30m
+findtime = 5m
