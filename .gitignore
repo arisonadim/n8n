@@ -1,0 +1,48 @@
+# Environment & Secrets
+.env
+.env.local
+.env.*.local
+*.key
+*.pem
+
+# Docker data volumes (local)
+# Note: These are managed by Docker, not committed to git
+.docker/
+
+# Backups
+backups/
+*.tar.gz
+*.tar
+*.zip
+
+# ACME/Let's Encrypt data
+acme_data/
+
+# IDE & Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# System files
+.env.swp
+*.pid
+
+# Node modules (if using node-based tools)
+node_modules/
+npm-debug.log
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Logs
+*.log
+logs/
+
+# Docker compose override (local development)
+docker-compose.override.yml
