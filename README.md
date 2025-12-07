@@ -4,19 +4,39 @@ Production-ready n8n with automated HTTPS on any VPS.
 
 ## Quick Start
 
+### 1. Install Git & Docker
+
 ```bash
+# Install Git
+sudo apt-get install -y git
+
 # Install Docker
 sudo apt-get update && sudo apt-get upgrade -y
 curl -fsSL https://get.docker.com | sudo sh
 sudo usermod -aG docker $USER && newgrp docker
+```
 
-# Configure
+### 2. Clone Repository
+
+```bash
+git clone git@github.com:arisonadim/n8n.git
+cd n8n
+```
+
+(Or HTTPS: `git clone https://github.com/arisonadim/n8n.git`)
+
+### 3. Configure
+
+```bash
 cp .env.example .env
 nano .env  # Set VIRTUAL_HOST, LETSENCRYPT_EMAIL, N8N_BASIC_AUTH_PASSWORD
+```
 
-# Start
-make init  # generates encryption key
-make up    # start all services
+### 4. Start
+
+```bash
+make init   # generates encryption key
+make up     # start all services
 make status
 ```
 
